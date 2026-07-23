@@ -9,7 +9,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, ready } = useAuth()
   if (!ready) {
     return (
-      <div className="bg-atmosphere flex min-h-screen items-center justify-center text-ink-soft">
+      <div className="bg-atmosphere flex min-h-screen items-center justify-center text-earth-soft">
         Loading…
       </div>
     )
@@ -22,7 +22,7 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
   const { session, ready } = useAuth()
   if (!ready) {
     return (
-      <div className="bg-atmosphere flex min-h-screen items-center justify-center text-ink-soft">
+      <div className="bg-atmosphere flex min-h-screen items-center justify-center text-earth-soft">
         Loading…
       </div>
     )

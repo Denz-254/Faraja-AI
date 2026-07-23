@@ -1,11 +1,37 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { login, register } from '../api/client'
-import { AppShell } from '../components/AppShell'
+import { FarajaMark } from '../components/FarajaMark'
 import { PinPad } from '../components/PinPad'
 import { useAuth } from '../hooks/useAuth'
 
 type Mode = 'welcome' | 'login' | 'register'
+
+function HeroMark() {
+  return (
+    <div className="relative mx-auto flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56">
+      <div
+        className="animate-soft-pulse absolute inset-0 rounded-full bg-amber/25 blur-2xl"
+        aria-hidden
+      />
+      <svg viewBox="0 0 120 120" className="relative h-full w-full drop-shadow-sm" aria-hidden>
+        <path
+          d="M60 102C60 102 16 74 16 44.5 16 29.2 27.5 18 41 18c8.6 0 15.3 4.4 19 10.6C63.7 22.4 70.4 18 79 18 92.5 18 104 29.2 104 44.5 104 74 60 102 60 102Z"
+          fill="none"
+          stroke="#D4A373"
+          strokeWidth="4.5"
+          strokeLinejoin="round"
+        />
+        <g className="origin-center" style={{ transformBox: 'fill-box' }}>
+          <rect className="voice-bar" x="42" y="52" width="5" height="18" rx="2.5" fill="#D4A373" />
+          <rect className="voice-bar" x="52" y="40" width="5" height="42" rx="2.5" fill="#D4A373" />
+          <rect className="voice-bar" x="62" y="46" width="5" height="30" rx="2.5" fill="#D4A373" />
+          <rect className="voice-bar" x="72" y="54" width="5" height="14" rx="2.5" fill="#D4A373" />
+        </g>
+      </svg>
+    </div>
+  )
+}
 
 export function LandingPage() {
   const { setSession } = useAuth()
@@ -36,91 +62,95 @@ export function LandingPage() {
 
   if (mode === 'welcome') {
     return (
-      <AppShell showNav={false}>
-        <section className="flex flex-1 flex-col justify-center gap-8 py-6">
-          <div className="animate-[fadeUp_0.7s_ease-out]">
-            <p className="font-display text-5xl font-bold leading-tight text-sea-deep sm:text-6xl">
+      <div className="bg-atmosphere relative min-h-screen overflow-hidden">
+        <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 py-8 sm:px-8 sm:py-10">
+          <section className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="animate-fade-up">
+              <HeroMark />
+            </div>
+
+            <h1 className="animate-fade-up-delay font-display mt-6 text-5xl font-semibold tracking-tight text-earth sm:text-6xl md:text-7xl">
               Faraja
-            </p>
-            <p className="mt-4 max-w-md text-lg leading-relaxed text-ink-soft sm:text-xl">
-              A gentle place to check in, share how you feel, and receive a little comfort.
-            </p>
-          </div>
+            </h1>
 
-          <div className="flex flex-col gap-3 sm:flex-row animate-[fadeUp_0.9s_ease-out]">
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className="rounded-2xl bg-sea px-8 py-4 text-lg font-bold text-white shadow-lg shadow-sea/20 transition hover:bg-sea-deep"
-            >
-              Enter with PIN
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              className="rounded-2xl bg-white/80 px-8 py-4 text-lg font-bold text-sea-deep transition hover:bg-white"
-            >
-              Create a PIN
-            </button>
-          </div>
+            <p className="animate-fade-up-delay mt-3 max-w-md text-balance text-lg leading-relaxed text-earth-soft sm:text-xl">
+              Comfort in every voice. A gentle companion for check-ins, care, and connection.
+            </p>
 
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-64 opacity-40 sm:h-80"
-            aria-hidden
-            style={{
-              background:
-                'radial-gradient(ellipse at bottom, rgba(31,122,108,0.25), transparent 70%)',
-            }}
-          />
-        </section>
-        <style>{`
-          @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-      </AppShell>
+            <div className="animate-fade-up-delay-2 mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="rounded-2xl bg-earth px-8 py-4 text-lg font-bold text-cream transition hover:bg-earth/90"
+              >
+                Enter with PIN
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('register')}
+                className="rounded-2xl border border-amber/50 bg-cream/60 px-8 py-4 text-lg font-bold text-earth transition hover:border-amber hover:bg-sand"
+              >
+                Create a PIN
+              </button>
+            </div>
+
+            <p className="animate-fade-up-delay-2 mt-8 text-sm text-earth-soft">
+              In Swahili, <span className="font-semibold text-earth">Faraja</span> means comfort.
+            </p>
+          </section>
+        </div>
+      </div>
     )
   }
 
   return (
-    <AppShell showNav={false}>
-      <section className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-4">
-        <h1 className="font-display text-3xl font-bold text-sea-deep sm:text-4xl">
-          {mode === 'register' ? 'Choose a 4-digit PIN' : 'Enter your PIN'}
-        </h1>
-        <p className="mt-2 text-ink-soft">
-          {mode === 'register'
-            ? 'Pick something easy to remember. You will use it to sign in.'
-            : 'Welcome back. Enter the PIN you created.'}
-        </p>
-
-        <div className="mt-8">
-          <PinPad onComplete={handlePin} disabled={loading} />
-        </div>
-
-        {loading && <p className="mt-4 text-center text-ink-soft">One moment…</p>}
-        {error && (
-          <p className="mt-4 rounded-2xl bg-blush/30 px-4 py-3 text-center text-ink" role="alert">
-            {error}
-          </p>
-        )}
-
+    <div className="bg-atmosphere min-h-screen">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 py-8 sm:px-8">
         <button
           type="button"
           onClick={() => {
             setError('')
-            setMode(mode === 'login' ? 'register' : 'login')
+            setMode('welcome')
           }}
-          className="mt-6 text-center font-semibold text-sea underline-offset-4 hover:underline"
+          className="mb-8 inline-flex w-fit items-center gap-2 text-earth-soft transition hover:text-earth"
         >
-          {mode === 'login' ? 'Need a new PIN?' : 'Already have a PIN?'}
+          <FarajaMark variant="symbol" tone="amber" className="h-8 w-8" />
+          <span className="font-display text-xl font-semibold text-earth">Faraja</span>
         </button>
 
-        <Link to="/" onClick={() => setMode('welcome')} className="mt-3 text-center text-ink-soft hover:text-ink">
-          Back
-        </Link>
-      </section>
-    </AppShell>
+        <section className="flex flex-1 flex-col justify-center pb-10">
+          <h1 className="font-display text-3xl font-semibold text-earth sm:text-4xl">
+            {mode === 'register' ? 'Choose a 4-digit PIN' : 'Enter your PIN'}
+          </h1>
+          <p className="mt-2 text-earth-soft">
+            {mode === 'register'
+              ? 'Pick something easy to remember. You will use it to sign in.'
+              : 'Welcome back. Enter the PIN you created.'}
+          </p>
+
+          <div className="mt-10">
+            <PinPad onComplete={handlePin} disabled={loading} />
+          </div>
+
+          {loading && <p className="mt-4 text-center text-earth-soft">One moment…</p>}
+          {error && (
+            <p className="mt-4 rounded-2xl bg-alert/15 px-4 py-3 text-center text-earth" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setError('')
+              setMode(mode === 'login' ? 'register' : 'login')
+            }}
+            className="mt-8 text-center font-semibold text-amber-deep underline-offset-4 hover:underline"
+          >
+            {mode === 'login' ? 'Need a new PIN?' : 'Already have a PIN?'}
+          </button>
+        </section>
+      </div>
+    </div>
   )
 }

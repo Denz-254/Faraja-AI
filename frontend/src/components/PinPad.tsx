@@ -31,8 +31,8 @@ export function PinPad({ onComplete, disabled = false }: PinPadProps) {
         {[0, 1, 2, 3].map((index) => (
           <span
             key={index}
-            className={`h-4 w-4 rounded-full transition-all duration-200 ${
-              index < pin.length ? 'scale-110 bg-sea' : 'bg-mist'
+            className={`h-3.5 w-3.5 rounded-full transition-all duration-200 ${
+              index < pin.length ? 'scale-110 bg-amber' : 'bg-mist'
             }`}
           />
         ))}
@@ -48,7 +48,7 @@ export function PinPad({ onComplete, disabled = false }: PinPadProps) {
                 type="button"
                 onClick={backspace}
                 disabled={disabled}
-                className="rounded-2xl bg-white/70 px-4 py-4 text-xl font-semibold text-ink-soft shadow-sm transition hover:bg-white disabled:opacity-50"
+                className="rounded-2xl bg-cream px-4 py-4 text-xl font-semibold text-earth-soft shadow-[0_1px_0_rgba(107,79,60,0.08)] ring-1 ring-mist transition hover:bg-sand disabled:opacity-50"
                 aria-label="Delete last digit"
               >
                 ⌫
@@ -61,7 +61,7 @@ export function PinPad({ onComplete, disabled = false }: PinPadProps) {
               type="button"
               onClick={() => press(digit)}
               disabled={disabled}
-              className="rounded-2xl bg-white/80 px-4 py-4 text-2xl font-bold text-ink shadow-sm transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0 disabled:opacity-50"
+              className="rounded-2xl bg-surface/90 px-4 py-4 text-2xl font-bold text-earth shadow-[0_1px_0_rgba(107,79,60,0.08)] ring-1 ring-mist transition hover:-translate-y-0.5 hover:bg-cream active:translate-y-0 disabled:opacity-50"
             >
               {digit}
             </button>

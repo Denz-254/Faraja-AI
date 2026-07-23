@@ -7,7 +7,7 @@ const MOODS: { id: Mood; label: string; hint: string; face: 'happy' | 'neutral' 
 ]
 
 function FaceIcon({ face, active }: { face: 'happy' | 'neutral' | 'sad'; active: boolean }) {
-  const stroke = active ? '#ffffff' : '#145a50'
+  const stroke = active ? '#FFF8F0' : '#6B4F3C'
   const mouth =
     face === 'happy'
       ? 'M18 28c2.5 3.5 7.5 3.5 10 0'
@@ -46,13 +46,13 @@ export function MoodPicker({ value, onChange, disabled = false }: MoodPickerProp
             onClick={() => onChange(mood.id)}
             className={`rounded-3xl px-4 py-6 text-center transition duration-200 ${
               selected
-                ? 'scale-[1.02] bg-sea text-white shadow-lg shadow-sea/25'
-                : 'bg-white/80 text-ink hover:-translate-y-1 hover:bg-white'
+                ? 'scale-[1.02] bg-earth text-cream shadow-lg shadow-earth/20'
+                : 'bg-surface/80 text-earth ring-1 ring-mist hover:-translate-y-1 hover:bg-cream'
             } disabled:opacity-50`}
           >
             <FaceIcon face={mood.face} active={selected} />
             <span className="block font-display text-xl font-semibold">{mood.label}</span>
-            <span className={`mt-1 block text-sm ${selected ? 'text-white/85' : 'text-ink-soft'}`}>
+            <span className={`mt-1 block text-sm ${selected ? 'text-cream/85' : 'text-earth-soft'}`}>
               {mood.hint}
             </span>
           </button>

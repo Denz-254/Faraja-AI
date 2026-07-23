@@ -5,24 +5,44 @@
 ## Quick start
 
 ```bash
-# 1) Database + API (Postgres runs only in Docker)
+# Full stack (Postgres + API + frontend) — all data stores in Docker
 docker compose up --build
-
-# 2) Frontend (separate terminal)
-cd frontend
-cp .env.example .env   # VITE_API_URL=http://localhost:8000
-npm install
-npm run dev
 ```
 
-- App: http://localhost:5173  
+- App (Docker): http://localhost:8080  
 - API docs: http://localhost:8000/docs  
-- Health: http://localhost:8000/health  
 
-### CI (GitHub Actions)
+Or run the UI with hot reload:
 
-Pushes and pull requests to `main` run lint, tests, frontend build, and Docker Compose validation (`.github/workflows/ci.yml`).  
-To **block merges of failing code**, enable branch protection on `main` and require the CI checks — see `.github/BRANCH_PROTECTION.md`.
+```bash
+cd frontend && cp .env.example .env && npm install && npm run dev
+```
+
+- Dev app: http://localhost:5173  
+
+### Brand
+
+**Faraja** (Swahili: comfort). Visual identity: Heart & Voice mark.  
+Colors: Amber `#D4A373` · Cream `#FFF8F0` · Earth `#6B4F3C`.
+
+### CI & GHCR (GitHub Actions)
+
+- `.github/workflows/ci.yml` — lint, tests, frontend build, compose validation on PRs/pushes  
+- `.github/workflows/ghcr.yml` — publishes images to GitHub Container Registry on push to `main`:
+  - `ghcr.io/<owner>/faraja-frontend`
+  - `ghcr.io/<owner>/faraja-backend`
+
+Pull published images (after packages are public or you `docker login ghcr.io`):
+
+```bash
+export FARAJA_FRONTEND_IMAGE=ghcr.io/<owner>/faraja-frontend:latest
+export FARAJA_BACKEND_IMAGE=ghcr.io/<owner>/faraja-backend:latest
+docker compose pull
+docker compose up
+```
+
+Optional repo variable: `VITE_API_URL` (used when building the frontend image).  
+To **block merges of failing code**, enable branch protection — see `.github/BRANCH_PROTECTION.md`.
 
 ## What Faraja Is
 

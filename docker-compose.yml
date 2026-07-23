@@ -16,27 +16,33 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    image: ${FARAJA_BACKEND_IMAGE:-faraja-backend:local}
+    build:
+      context: ./backend
+      tags:
+        - faraja-backend:local
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://faraja:faraja@db:5432/faraja
-      SECRET_KEY: dev-secret-key-change-in-production
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080}
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
 
-  # Frontend is usually run with `npm run dev` on the host for hot reload.
-  # Uncomment to serve a production build via Docker:
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "5173:80"
-  #   depends_on:
-  #     - backend
+  frontend:
+    image: ${FARAJA_FRONTEND_IMAGE:-faraja-frontend:local}
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      tags:
+        - faraja-frontend:local
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
