@@ -2,12 +2,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 MoodType = Literal["happy", "neutral", "sad"]
 
 
 class CheckinCreate(BaseModel):
-    user_id: str
     mood: MoodType
     text: str | None = Field(default=None, max_length=2000)
 

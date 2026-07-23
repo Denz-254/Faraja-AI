@@ -2,7 +2,6 @@ import re
 
 from pydantic import BaseModel, Field, field_validator
 
-
 PIN_PATTERN = re.compile(r"^\d{4}$")
 
 

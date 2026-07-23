@@ -2,6 +2,28 @@
 
 > Paste this file into Cursor (e.g. as `PROJECT.md` or `.cursor/rules/faraja.md`) so it has full context on the architecture, stack, and conventions before generating code.
 
+## Quick start
+
+```bash
+# 1) Database + API (Postgres runs only in Docker)
+docker compose up --build
+
+# 2) Frontend (separate terminal)
+cd frontend
+cp .env.example .env   # VITE_API_URL=http://localhost:8000
+npm install
+npm run dev
+```
+
+- App: http://localhost:5173  
+- API docs: http://localhost:8000/docs  
+- Health: http://localhost:8000/health  
+
+### CI (GitHub Actions)
+
+Pushes and pull requests to `main` run lint, tests, frontend build, and Docker Compose validation (`.github/workflows/ci.yml`).  
+To **block merges of failing code**, enable branch protection on `main` and require the CI checks — see `.github/BRANCH_PROTECTION.md`.
+
 ## What Faraja Is
 
 A comfort/check-in web app. Users log a mood (happy / neutral / sad), optionally add a voice note or text, and receive an AI-selected comforting response. Includes PIN-based auth and a history of past check-ins. Designed with elderly/low-friction users in mind.
@@ -182,12 +204,15 @@ class AIService:
 
 ## API Endpoints
 
+Protected routes require `Authorization: Bearer <session_token>` from login.
+
 | Endpoint | Method | Request Body | Response |
 |---|---|---|---|
 | `/auth/register` | POST | `{"pin": "1234"}` | `{"user_id": "uuid", "message": "Welcome!"}` |
 | `/auth/login` | POST | `{"pin": "1234"}` | `{"user_id": "uuid", "session_token": "..."}` |
-| `/checkin` | POST | `{"user_id": "uuid", "mood": "happy", "text": "..."}` | `{"checkin_id": "uuid", "ai_response": "..."}` |
-| `/history/{user_id}` | GET | — | `[{"date": "...", "mood": "...", "response": "..."}, ...]` |
+| `/checkin` | POST | `{"mood": "happy", "text": "..."}` | `{"checkin_id": "uuid", "ai_response": "..."}` |
+| `/checkin/today` | GET | — | `{"has_checkin": true, "mood": "...", "ai_response": "..."}` |
+| `/history` | GET | — | `[{"date": "...", "mood": "...", "response": "..."}, ...]` |
 
 Module communication inside the monolith is via simple synchronous REST calls between frontend and backend; internally, the AI response module is called as a direct function call, not an API — no message queues or event buses in the MVP.
 

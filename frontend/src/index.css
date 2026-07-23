@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Nunito", system-ui, sans-serif;
+  --color-ink: #16352f;
+  --color-ink-soft: #3d5c54;
+  --color-foam: #eef7f3;
+  --color-mist: #d4ebe3;
+  --color-sea: #1f7a6c;
+  --color-sea-deep: #145a50;
+  --color-sun: #f0b429;
+  --color-blush: #e8a598;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-foam);
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .bg-atmosphere {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(31, 122, 108, 0.18), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 90% 10%, rgba(240, 180, 41, 0.16), transparent 50%),
+      linear-gradient(165deg, #eef7f3 0%, #dceee8 45%, #c8e4db 100%);
+  }
+}

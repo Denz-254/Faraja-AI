@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -46,3 +44,11 @@ def registered_user(client):
     response = client.post("/auth/register", json={"pin": "1234"})
     assert response.status_code == 200
     return response.json()
+
+
+@pytest.fixture
+def auth_headers(client, registered_user):
+    response = client.post("/auth/login", json={"pin": "1234"})
+    assert response.status_code == 200
+    token = response.json()["session_token"]
+    return {"Authorization": f"Bearer {token}"}

@@ -29,5 +29,14 @@ services:
     volumes:
       - ./backend:/app
 
+  # Frontend is usually run with `npm run dev` on the host for hot reload.
+  # Uncomment to serve a production build via Docker:
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "5173:80"
+  #   depends_on:
+  #     - backend
+
 volumes:
   pgdata:
