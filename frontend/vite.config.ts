@@ -10,6 +10,7 @@ export default defineConfig({
       '/auth': 'http://localhost:8000',
       '/checkin': 'http://localhost:8000',
       '/history': 'http://localhost:8000',
+      '/voice': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
     },
   },

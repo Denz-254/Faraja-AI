@@ -4,6 +4,7 @@ import { HistoryPage } from './pages/HistoryPage'
 import { HomePage } from './pages/HomePage'
 import { LandingPage } from './pages/LandingPage'
 import { LogPage } from './pages/LogPage'
+import { TalkPage } from './pages/TalkPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, ready } = useAuth()
@@ -55,6 +56,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <LogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/talk"
+        element={
+          <ProtectedRoute>
+            <TalkPage />
           </ProtectedRoute>
         }
       />

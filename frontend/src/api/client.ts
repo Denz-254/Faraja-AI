@@ -76,3 +76,60 @@ export function getHistory(token: string) {
     headers: authHeaders(token),
   })
 }
+
+export type VoiceMode = 'proactive' | 'open' | 'comfort'
+
+export type VoiceStatus = {
+  configured: boolean
+  tts_configured: boolean
+  agent_id_set: boolean
+}
+
+export type VoiceSession = {
+  signed_url: string
+  first_message: string
+  system_prompt: string
+  mode: VoiceMode
+  agent_id: string
+}
+
+export function getVoiceStatus(token: string) {
+  return request<VoiceStatus>('/voice/status', {
+    headers: authHeaders(token),
+  })
+}
+
+export function createVoiceSession(
+  token: string,
+  body: { mode: VoiceMode; mood?: Mood; comfort_text?: string },
+) {
+  return request<VoiceSession>('/voice/session', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(body),
+  })
+}
+
+export async function speakText(token: string, text: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/voice/speak`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ text }),
+  })
+
+  if (!response.ok) {
+    let detail = 'Could not speak that message.'
+    try {
+      const body = await response.json()
+      if (typeof body.detail === 'string') detail = body.detail
+    } catch {
+      // keep default
+    }
+    throw new Error(detail)
+  }
+
+  return response.blob()
+}

@@ -40,6 +40,12 @@ export function AppShell({ children, showNav = true }: AppShellProps) {
               </Link>
               <Link
                 className="rounded-xl px-3 py-2 text-earth-soft transition hover:bg-sand/80 hover:text-earth"
+                to="/talk?mode=proactive"
+              >
+                Talk
+              </Link>
+              <Link
+                className="rounded-xl px-3 py-2 text-earth-soft transition hover:bg-sand/80 hover:text-earth"
                 to="/history"
               >
                 History

@@ -20,10 +20,22 @@ cd frontend && cp .env.example .env && npm install && npm run dev
 
 - Dev app: http://localhost:5173  
 
-### Brand
+### Voice companion (ElevenLabs)
 
-**Faraja** (Swahili: comfort). Visual identity: Heart & Voice mark.  
-Colors: Amber `#D4A373` · Cream `#FFF8F0` · Earth `#6B4F3C`.
+1. Create an **Agent** in the [ElevenLabs Agents dashboard](https://elevenlabs.io/app/agents).
+2. Set a warm first message and system prompt (Faraja = comfort companion for seniors).
+3. Under agent **Security**, enable authentication + allow overrides for `first_message` and `prompt.prompt`.
+4. Put secrets in `backend/.env` (never in the frontend):
+
+```
+ELEVENLABS_API_KEY=sk_...
+ELEVENLABS_AGENT_ID=agent_...
+ELEVENLABS_VOICE_ID=your_voice_id
+```
+
+5. Restart the backend. On Home, tap **Answer Faraja** — she initiates the check-in by voice.
+
+API key stays on the server; the app only receives short-lived signed WebSocket URLs.
 
 ### CI & GHCR (GitHub Actions)
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { createCheckin, type Mood } from '../api/client'
+import { Link, useNavigate } from 'react-router-dom'
+import { createCheckin, speakText, type Mood } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { MoodPicker } from '../components/MoodPicker'
 import { useAuth } from '../hooks/useAuth'
@@ -13,6 +13,7 @@ export function LogPage() {
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
 
   async function submit() {
     if (!session || !mood) return
@@ -21,10 +22,33 @@ export function LogPage() {
     try {
       const result = await createCheckin(session.token, mood, text.trim() || undefined)
       setResponse(result.ai_response)
+      void playSpokenComfort(result.ai_response)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save check-in')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function playSpokenComfort(message: string) {
+    if (!session) return
+    setSpeaking(true)
+    try {
+      const blob = await speakText(session.token, message)
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.onended = () => {
+        URL.revokeObjectURL(url)
+        setSpeaking(false)
+      }
+      audio.onerror = () => {
+        URL.revokeObjectURL(url)
+        setSpeaking(false)
+      }
+      await audio.play()
+    } catch {
+      setSpeaking(false)
+      // TTS optional — keep text response visible
     }
   }
 
@@ -38,13 +62,22 @@ export function LogPage() {
           <h1 className="animate-fade-up font-display text-3xl font-semibold leading-snug text-earth sm:text-4xl">
             {response}
           </h1>
-          <button
-            type="button"
-            onClick={() => navigate('/home')}
-            className="mt-4 w-fit rounded-2xl bg-earth px-8 py-4 text-lg font-bold text-cream transition hover:bg-earth/90"
-          >
-            Back home
-          </button>
+          {speaking && <p className="text-earth-soft">Faraja is speaking…</p>}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className="w-fit rounded-2xl bg-earth px-8 py-4 text-lg font-bold text-cream transition hover:bg-earth/90"
+            >
+              Back home
+            </button>
+            <Link
+              to={`/talk?mode=proactive&mood=${mood ?? 'neutral'}`}
+              className="w-fit rounded-2xl bg-amber px-8 py-4 text-lg font-bold text-earth transition hover:bg-amber-deep hover:text-cream"
+            >
+              Keep talking
+            </Link>
+          </div>
         </section>
       </AppShell>
     )
