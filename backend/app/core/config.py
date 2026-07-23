@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     # ElevenLabs — never expose these to the frontend
     elevenlabs_api_key: str = ""
     elevenlabs_agent_id: str = ""
-    elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel — warm default; replace with your designed voice
+    # Default stock voice (Rachel); replace with your Voice Design ID
+    elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"
     elevenlabs_tts_model: str = "eleven_flash_v2_5"
 
     @property

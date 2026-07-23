@@ -94,7 +94,10 @@ class ElevenLabsService:
         if response.status_code >= 400:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"ElevenLabs signed URL failed ({response.status_code}): {response.text[:300]}",
+                detail=(
+                    f"ElevenLabs signed URL failed ({response.status_code}): "
+                    f"{response.text[:300]}"
+                ),
             )
 
         data = response.json()
