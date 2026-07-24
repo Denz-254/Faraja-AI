@@ -5,6 +5,7 @@ import {
   getVoiceStatus,
   type Mood,
   type VoiceMode,
+  type VoiceSession,
   type VoiceStatus,
 } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -34,6 +35,29 @@ function formatVoiceError(value: unknown): string {
     }
   }
   return 'Voice connection error'
+}
+
+function resolveSessionCredentials(voiceSession: VoiceSession) {
+  const token =
+    voiceSession.conversation_token?.trim() ||
+    (voiceSession as { conversationToken?: string }).conversationToken?.trim() ||
+    ''
+  const signedUrl =
+    voiceSession.signed_url?.trim() ||
+    (voiceSession as { signedUrl?: string }).signedUrl?.trim() ||
+    ''
+  const agentId = voiceSession.agent_id?.trim() || ''
+
+  if (token) {
+    return { kind: 'webrtc' as const, conversationToken: token, agentId }
+  }
+  if (signedUrl) {
+    return { kind: 'websocket' as const, signedUrl, agentId }
+  }
+  if (agentId) {
+    return { kind: 'agent' as const, agentId }
+  }
+  return null
 }
 
 export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
@@ -85,12 +109,17 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
 
     startingRef.current = true
     setError('')
-    setTranscript([])
+    setTranscript([
+      {
+        id: 'opening',
+        role: 'system',
+        text: 'Requesting microphone and connecting to Faraja…',
+      },
+    ])
     setPhase('connecting')
     setActive(true)
 
     try {
-      // Explicit mic permission before connecting (clearer UX + fails early)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach((track) => track.stop())
 
@@ -100,13 +129,12 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
         comfort_text: options.comfortText,
       })
 
-      setTranscript([
-        {
-          id: 'opening',
-          role: 'system',
-          text: 'Connected. Faraja should greet you using her agent first message…',
-        },
-      ])
+      const creds = resolveSessionCredentials(voiceSession)
+      if (!creds) {
+        throw new Error(
+          'Voice session response had no conversation token, signed URL, or agent id. Rebuild/restart the backend.',
+        )
+      }
 
       const contextBits = [
         options.mode === 'proactive' ? 'This is a proactive check-in started by Faraja.' : null,
@@ -114,23 +142,19 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
         options.comfortText ? `Recent comfort note: ${options.comfortText}` : null,
       ].filter(Boolean)
 
-      // Do NOT send prompt/firstMessage overrides by default — if those are
-      // not enabled on the agent Security tab, ElevenLabs drops the session.
-      const conversation = await Conversation.startSession({
-        conversationToken: voiceSession.conversation_token,
-        connectionType: 'webrtc',
+      const sharedCallbacks = {
         onConnect: () => {
           setPhase('listening')
           setTranscript((prev) => [
             ...prev,
             {
-              id: 'connected',
-              role: 'system',
+              id: `connected-${Date.now()}`,
+              role: 'system' as const,
               text: 'Live. Speak when ready — or wait for Faraja’s greeting.',
             },
           ])
         },
-        onDisconnect: (details) => {
+        onDisconnect: (details: unknown) => {
           conversationRef.current = null
           startingRef.current = false
           setActive(false)
@@ -143,18 +167,18 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
             setError((prev) => prev || `Call ended (${reason}). Try Start again.`)
           }
         },
-        onError: (message) => {
+        onError: (message: unknown) => {
           setError(formatVoiceError(message))
           setPhase('ended')
           setActive(false)
           startingRef.current = false
           conversationRef.current = null
         },
-        onModeChange: (payload) => {
+        onModeChange: (payload: { mode: string }) => {
           if (payload.mode === 'speaking') setPhase('speaking')
           if (payload.mode === 'listening') setPhase('listening')
         },
-        onMessage: (message) => {
+        onMessage: (message: { source?: string; message?: string }) => {
           const role = message.source === 'user' ? 'user' : 'agent'
           const text = message.message?.trim()
           if (!text) return
@@ -167,7 +191,54 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
             },
           ])
         },
-      })
+      }
+
+      // No prompt/firstMessage overrides — those drop the call if not enabled on the agent.
+      let conversation: Awaited<ReturnType<typeof Conversation.startSession>>
+
+      if (creds.kind === 'webrtc') {
+        setTranscript((prev) => [
+          ...prev,
+          {
+            id: 'mode-webrtc',
+            role: 'system',
+            text: 'Using WebRTC voice connection…',
+          },
+        ])
+        conversation = await Conversation.startSession({
+          conversationToken: creds.conversationToken,
+          connectionType: 'webrtc',
+          ...sharedCallbacks,
+        })
+      } else if (creds.kind === 'websocket') {
+        setTranscript((prev) => [
+          ...prev,
+          {
+            id: 'mode-ws',
+            role: 'system',
+            text: 'Using WebSocket voice connection…',
+          },
+        ])
+        conversation = await Conversation.startSession({
+          signedUrl: creds.signedUrl,
+          connectionType: 'websocket',
+          ...sharedCallbacks,
+        })
+      } else {
+        setTranscript((prev) => [
+          ...prev,
+          {
+            id: 'mode-agent',
+            role: 'system',
+            text: 'Connecting with agent id…',
+          },
+        ])
+        conversation = await Conversation.startSession({
+          agentId: creds.agentId,
+          connectionType: 'webrtc',
+          ...sharedCallbacks,
+        })
+      }
 
       conversationRef.current = conversation
       startingRef.current = false
@@ -176,7 +247,7 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
         try {
           conversation.sendContextualUpdate(contextBits.join(' '))
         } catch {
-          // optional context
+          // optional
         }
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
 from app.core.config import settings
@@ -29,11 +29,47 @@ async def create_voice_session(
     payload: VoiceSessionRequest,
     _current_user: User = Depends(get_current_user),
 ) -> VoiceSessionResponse:
-    # Prefer WebRTC token for browser audio; keep signed URL as fallback
-    conversation_token = await elevenlabs_service.get_conversation_token()
-    signed_url = await elevenlabs_service.get_signed_url()
+    if not elevenlabs_service.is_agent_ready():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Voice companion is not configured. Set ELEVENLABS_API_KEY and "
+                "ELEVENLABS_AGENT_ID on the backend."
+            ),
+        )
+
     first_message = elevenlabs_service.build_first_message(payload.mode, payload.comfort_text)
     system_prompt = elevenlabs_service.build_system_prompt(payload.mode, payload.mood)
+
+    conversation_token: str | None = None
+    signed_url: str | None = None
+    connection: str = "webrtc"
+    token_error: str | None = None
+    url_error: str | None = None
+
+    try:
+        conversation_token = await elevenlabs_service.get_conversation_token()
+    except HTTPException as exc:
+        token_error = str(exc.detail)
+
+    try:
+        signed_url = await elevenlabs_service.get_signed_url()
+    except HTTPException as exc:
+        url_error = str(exc.detail)
+
+    if conversation_token:
+        connection = "webrtc"
+    elif signed_url:
+        connection = "websocket"
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "Could not start a voice session. "
+                f"Token error: {token_error or 'n/a'}. "
+                f"Signed URL error: {url_error or 'n/a'}."
+            ),
+        )
 
     return VoiceSessionResponse(
         conversation_token=conversation_token,
@@ -42,7 +78,7 @@ async def create_voice_session(
         system_prompt=system_prompt,
         mode=payload.mode,
         agent_id=settings.elevenlabs_agent_id,
-        prefer_webrtc=True,
+        connection=connection,  # type: ignore[arg-type]
         use_overrides=False,
     )
 

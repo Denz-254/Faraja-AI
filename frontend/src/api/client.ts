@@ -86,13 +86,13 @@ export type VoiceStatus = {
 }
 
 export type VoiceSession = {
-  conversation_token: string
-  signed_url: string
+  agent_id: string
   first_message: string
   system_prompt: string
   mode: VoiceMode
-  agent_id: string
-  prefer_webrtc?: boolean
+  conversation_token?: string | null
+  signed_url?: string | null
+  connection?: 'webrtc' | 'websocket'
   use_overrides?: boolean
 }
 
