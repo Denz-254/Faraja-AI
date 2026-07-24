@@ -58,9 +58,16 @@ export function TalkPage() {
             <p className="font-semibold">Voice is almost ready</p>
             <p className="mt-2 text-earth-soft">
               Add your ElevenLabs API key and Agent ID to <code className="text-earth">backend/.env</code>,
-              then enable <strong>first_message</strong> and <strong>prompt</strong> overrides on the agent
-              (Security tab). Restart the API after saving.
+              then restart the API.
             </p>
+          </div>
+        )}
+
+        {configured && (
+          <div className="rounded-3xl bg-sand/60 px-5 py-4 text-sm text-earth-soft" role="note">
+            Tip: In the ElevenLabs agent editor, set a <strong className="text-earth">First message</strong> so
+            Faraja greets you when the call starts (e.g. “Hello, I’m Faraja — how are you feeling today?”).
+            Keep volume up and use headphones if the browser blocks autoplay.
           </div>
         )}
 

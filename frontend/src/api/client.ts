@@ -86,11 +86,14 @@ export type VoiceStatus = {
 }
 
 export type VoiceSession = {
+  conversation_token: string
   signed_url: string
   first_message: string
   system_prompt: string
   mode: VoiceMode
   agent_id: string
+  prefer_webrtc?: boolean
+  use_overrides?: boolean
 }
 
 export function getVoiceStatus(token: string) {

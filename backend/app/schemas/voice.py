@@ -12,11 +12,15 @@ class VoiceSessionRequest(BaseModel):
 
 
 class VoiceSessionResponse(BaseModel):
+    conversation_token: str
     signed_url: str
     first_message: str
     system_prompt: str
     mode: VoiceMode
     agent_id: str
+    # Client should prefer WebRTC; overrides often fail unless enabled on the agent
+    prefer_webrtc: bool = True
+    use_overrides: bool = False
 
 
 class VoiceStatusResponse(BaseModel):

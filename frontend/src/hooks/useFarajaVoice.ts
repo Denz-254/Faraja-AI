@@ -21,11 +21,27 @@ type UseFarajaVoiceOptions = {
   comfortText?: string
 }
 
+function formatVoiceError(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value instanceof Error) return value.message
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    if (typeof record.message === 'string') return record.message
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return 'Voice connection error'
+    }
+  }
+  return 'Voice connection error'
+}
+
 export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
   const { session } = useAuth()
   const conversationRef = useRef<Awaited<ReturnType<typeof Conversation.startSession>> | null>(
     null,
   )
+  const startingRef = useRef(false)
   const [status, setStatus] = useState<VoiceStatus | null>(null)
   const [phase, setPhase] = useState<'idle' | 'connecting' | 'listening' | 'speaking' | 'ended'>(
     'idle',
@@ -41,11 +57,12 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
       .catch((err: Error) => setError(err.message))
   }, [session])
 
-  const stop = useCallback(async () => {
+  const endConversation = useCallback(async (markEnded: boolean) => {
     const current = conversationRef.current
     conversationRef.current = null
+    startingRef.current = false
     setActive(false)
-    setPhase('ended')
+    if (markEnded) setPhase('ended')
     if (current) {
       try {
         await current.endSession()
@@ -55,18 +72,28 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
     }
   }, [])
 
+  const stop = useCallback(async () => {
+    await endConversation(true)
+  }, [endConversation])
+
   const start = useCallback(async () => {
     if (!session) {
       setError('Please sign in first.')
       return
     }
+    if (startingRef.current || conversationRef.current) return
 
+    startingRef.current = true
     setError('')
     setTranscript([])
     setPhase('connecting')
     setActive(true)
 
     try {
+      // Explicit mic permission before connecting (clearer UX + fails early)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach((track) => track.stop())
+
       const voiceSession = await createVoiceSession(session.token, {
         mode: options.mode ?? 'proactive',
         mood: options.mood,
@@ -77,34 +104,51 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
         {
           id: 'opening',
           role: 'system',
-          text: 'Faraja is starting the conversation…',
+          text: 'Connected. Faraja should greet you using her agent first message…',
         },
       ])
 
+      const contextBits = [
+        options.mode === 'proactive' ? 'This is a proactive check-in started by Faraja.' : null,
+        options.mood ? `User mood check-in: ${options.mood}.` : null,
+        options.comfortText ? `Recent comfort note: ${options.comfortText}` : null,
+      ].filter(Boolean)
+
+      // Do NOT send prompt/firstMessage overrides by default — if those are
+      // not enabled on the agent Security tab, ElevenLabs drops the session.
       const conversation = await Conversation.startSession({
-        signedUrl: voiceSession.signed_url,
-        connectionType: 'websocket',
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: voiceSession.system_prompt,
-            },
-            firstMessage: voiceSession.first_message,
-            language: 'en',
-          },
-        },
+        conversationToken: voiceSession.conversation_token,
+        connectionType: 'webrtc',
         onConnect: () => {
           setPhase('listening')
+          setTranscript((prev) => [
+            ...prev,
+            {
+              id: 'connected',
+              role: 'system',
+              text: 'Live. Speak when ready — or wait for Faraja’s greeting.',
+            },
+          ])
         },
-        onDisconnect: () => {
+        onDisconnect: (details) => {
+          conversationRef.current = null
+          startingRef.current = false
           setActive(false)
           setPhase('ended')
-          conversationRef.current = null
+          const reason =
+            details && typeof details === 'object' && 'reason' in details
+              ? String((details as { reason?: string }).reason ?? '')
+              : ''
+          if (reason && reason !== 'user') {
+            setError((prev) => prev || `Call ended (${reason}). Try Start again.`)
+          }
         },
         onError: (message) => {
-          setError(typeof message === 'string' ? message : 'Voice connection error')
+          setError(formatVoiceError(message))
           setPhase('ended')
           setActive(false)
+          startingRef.current = false
+          conversationRef.current = null
         },
         onModeChange: (payload) => {
           if (payload.mode === 'speaking') setPhase('speaking')
@@ -115,7 +159,7 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
           const text = message.message?.trim()
           if (!text) return
           setTranscript((prev) => [
-            ...prev,
+            ...prev.filter((line) => line.role !== 'system'),
             {
               id: `${role}-${Date.now()}-${prev.length}`,
               role,
@@ -126,18 +170,33 @@ export function useFarajaVoice(options: UseFarajaVoiceOptions = {}) {
       })
 
       conversationRef.current = conversation
+      startingRef.current = false
+
+      if (contextBits.length) {
+        try {
+          conversation.sendContextualUpdate(contextBits.join(' '))
+        } catch {
+          // optional context
+        }
+      }
     } catch (err) {
+      startingRef.current = false
       setActive(false)
       setPhase('idle')
-      setError(err instanceof Error ? err.message : 'Could not start Faraja')
+      const message = formatVoiceError(err)
+      if (message.toLowerCase().includes('permission') || message.toLowerCase().includes('not allowed')) {
+        setError('Microphone permission is required. Allow the mic and try again.')
+      } else {
+        setError(message || 'Could not start Faraja')
+      }
     }
   }, [session, options.mode, options.mood, options.comfortText])
 
   useEffect(() => {
     return () => {
-      void stop()
+      void endConversation(false)
     }
-  }, [stop])
+  }, [endConversation])
 
   return {
     status,

@@ -37,9 +37,7 @@ FIRST_MESSAGES: dict[VoiceMode, str] = {
         "Hello. I'm Faraja. I'm here to listen whenever you're ready. "
         "What's on your mind?"
     ),
-    "comfort": (
-        "I'm here with you. Take your time — I'm listening."
-    ),
+    "comfort": ("I'm here with you. Take your time — I'm listening."),
 }
 
 
@@ -66,7 +64,7 @@ class ElevenLabsService:
             extra += f"\nThe user's latest mood check-in was: {mood}."
         return f"{FARAJA_SYSTEM_PROMPT}{extra}"
 
-    async def get_signed_url(self) -> str:
+    def _require_agent_config(self) -> None:
         if not settings.elevenlabs_configured:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -76,12 +74,10 @@ class ElevenLabsService:
                 ),
             )
 
-        url = (
-            f"{ELEVEN_BASE}/convai/conversation/get-signed-url"
-            f"?agent_id={settings.elevenlabs_agent_id}"
-        )
+    async def _eleven_get(self, path: str) -> dict:
+        self._require_agent_config()
         headers = {"xi-api-key": settings.elevenlabs_api_key}
-
+        url = f"{ELEVEN_BASE}{path}"
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url, headers=headers)
@@ -95,12 +91,16 @@ class ElevenLabsService:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=(
-                    f"ElevenLabs signed URL failed ({response.status_code}): "
+                    f"ElevenLabs request failed ({response.status_code}): "
                     f"{response.text[:300]}"
                 ),
             )
+        return response.json()
 
-        data = response.json()
+    async def get_signed_url(self) -> str:
+        data = await self._eleven_get(
+            f"/convai/conversation/get-signed-url?agent_id={settings.elevenlabs_agent_id}"
+        )
         signed = data.get("signed_url")
         if not signed:
             raise HTTPException(
@@ -108,6 +108,19 @@ class ElevenLabsService:
                 detail="ElevenLabs did not return a signed_url",
             )
         return str(signed)
+
+    async def get_conversation_token(self) -> str:
+        """WebRTC token — preferred for browser voice audio."""
+        data = await self._eleven_get(
+            f"/convai/conversation/token?agent_id={settings.elevenlabs_agent_id}"
+        )
+        token = data.get("token")
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="ElevenLabs did not return a conversation token",
+            )
+        return str(token)
 
     async def synthesize_speech(self, text: str) -> bytes:
         if not settings.elevenlabs_tts_configured:
@@ -145,7 +158,10 @@ class ElevenLabsService:
         if response.status_code >= 400:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"ElevenLabs TTS failed ({response.status_code}): {response.text[:300]}",
+                detail=(
+                    f"ElevenLabs TTS failed ({response.status_code}): "
+                    f"{response.text[:300]}"
+                ),
             )
 
         return response.content

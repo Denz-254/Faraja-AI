@@ -29,16 +29,21 @@ async def create_voice_session(
     payload: VoiceSessionRequest,
     _current_user: User = Depends(get_current_user),
 ) -> VoiceSessionResponse:
+    # Prefer WebRTC token for browser audio; keep signed URL as fallback
+    conversation_token = await elevenlabs_service.get_conversation_token()
     signed_url = await elevenlabs_service.get_signed_url()
     first_message = elevenlabs_service.build_first_message(payload.mode, payload.comfort_text)
     system_prompt = elevenlabs_service.build_system_prompt(payload.mode, payload.mood)
 
     return VoiceSessionResponse(
+        conversation_token=conversation_token,
         signed_url=signed_url,
         first_message=first_message,
         system_prompt=system_prompt,
         mode=payload.mode,
         agent_id=settings.elevenlabs_agent_id,
+        prefer_webrtc=True,
+        use_overrides=False,
     )
 
 
